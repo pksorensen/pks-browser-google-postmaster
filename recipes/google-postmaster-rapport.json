@@ -1,0 +1,58 @@
+{
+  "name": "google-postmaster-rapport",
+  "description": "UDKAST, ikke kørt i trayen endnu. Læser Google Postmaster Tools for hvert domæne på kontoen: overholdelse, spam, feedback loop, godkendelse, kryptering og leveringsfejl for de sidste 7 dage. Kun læse-verber, så den kan køre uovervåget én gang i døgnet.",
+  "profile": "google",
+  "params": {},
+  "result": ["domaener", "leveringsfejl", "rapport"],
+  "steps": [
+    { "id": "aabn", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/sender_compliance" },
+    {
+      "id": "domaener",
+      "do": "collect",
+      "selector": "ul[role=menu] li[role=menuitem]",
+      "as": "domaener",
+      "comment": "Domænevælgeren øverst. Den ligger i DOM'en også når den er lukket, og har alle domæner på kontoen (også ikke-verificerede), så listen kræver intet klik. Målt 15/11: 5 af 5."
+    },
+    {
+      "id": "hvert-domaene",
+      "do": "forEach",
+      "in": "domaener",
+      "itemVar": "d",
+      "steps": [
+        { "id": "overholdelse", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/sender_compliance?domain={{d.text}}" },
+        { "id": "overholdelse-klar", "do": "assert", "selector": "h1, h2", "timeoutMs": 20000 },
+        { "id": "overholdelse-laes", "do": "collect", "selector": "body", "as": "rapport", "append": true, "stamp": { "domain": "{{d.text}}", "side": "sender_compliance" } },
+
+        { "id": "spam", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/spam?domain={{d.text}}&h=7" },
+        { "id": "spam-klar", "do": "assert", "selector": "h1", "timeoutMs": 20000 },
+        { "id": "spam-laes", "do": "collect", "selector": "body", "as": "rapport", "append": true, "stamp": { "domain": "{{d.text}}", "side": "spam" } },
+
+        { "id": "feedback", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/feedback_loop?domain={{d.text}}&h=7" },
+        { "id": "feedback-klar", "do": "assert", "selector": "h1", "timeoutMs": 20000 },
+        { "id": "feedback-laes", "do": "collect", "selector": "body", "as": "rapport", "append": true, "stamp": { "domain": "{{d.text}}", "side": "feedback_loop" } },
+
+        { "id": "godkendelse", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/authentication?domain={{d.text}}&h=7" },
+        { "id": "godkendelse-klar", "do": "assert", "selector": "h1", "timeoutMs": 20000 },
+        { "id": "godkendelse-laes", "do": "collect", "selector": "body", "as": "rapport", "append": true, "stamp": { "domain": "{{d.text}}", "side": "authentication" } },
+
+        { "id": "kryptering", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/encryption?domain={{d.text}}&h=7" },
+        { "id": "kryptering-klar", "do": "assert", "selector": "h1", "timeoutMs": 20000 },
+        { "id": "kryptering-laes", "do": "collect", "selector": "body", "as": "rapport", "append": true, "stamp": { "domain": "{{d.text}}", "side": "encryption" } },
+
+        { "id": "fejl", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/delivery_errors?domain={{d.text}}&h=7" },
+        { "id": "fejl-klar", "do": "assert", "selector": "h1", "timeoutMs": 20000 },
+        {
+          "id": "fejl-raekker",
+          "do": "collect",
+          "selector": "table tbody tr",
+          "as": "leveringsfejl",
+          "append": true,
+          "fields": { "dato": "td:nth-child(1)", "type": "td:nth-child(2)", "aarsag": "td:nth-child(3)", "andel": "td:nth-child(4)" },
+          "stamp": { "domain": "{{d.text}}" },
+          "comment": "Tabellen under grafen: Date, Error Type, Reason, Percentage. Tom når der ingen fejl er."
+        },
+        { "id": "fejl-laes", "do": "collect", "selector": "body", "as": "rapport", "append": true, "stamp": { "domain": "{{d.text}}", "side": "delivery_errors" } }
+      ]
+    }
+  ]
+}

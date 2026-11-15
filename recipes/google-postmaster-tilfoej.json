@@ -1,0 +1,62 @@
+{
+  "name": "google-postmaster-tilfoej",
+  "description": "Tilføjer et domæne i Google Postmaster Tools og læser dets verifikationsposter (TXT og CNAME) ud. DNS-posten lægges bagefter af kalderen (Cloudflare), og google-postmaster-bekraeft trykker Verify. Se docs/google-postmaster.md.",
+  "profile": "google",
+  "params": {
+    "domain": { "required": true, "description": "Domænet der skal tilføjes, fx famai.dk. Kun domænet, ingen https:// og ingen sti." }
+  },
+  "result": ["verifikation"],
+  "steps": [
+    {
+      "id": "log-ind",
+      "do": "human",
+      "url": "https://postmaster.google.com/v2/u/0/manage_domains",
+      "prompt": "Log ind på din Google-konto i vinduet, hvis den spørger. Opskriften fortsætter selv, når domænelisten vises.",
+      "until": { "url": "https://postmaster.google.com/v2/u/0/manage_domains" },
+      "timeoutMs": 600000
+    },
+    { "id": "aabn-tilfoej", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/add_domain" },
+    {
+      "id": "skriv-domaene",
+      "do": "type",
+      "role": "textbox",
+      "name": "Domain",
+      "value": "{{domain}}",
+      "comment": "type, ikke fill: Create er slået fra indtil Angular-formularen har set tastetryk. fill satte værdien uden at knappen vågnede."
+    },
+    { "id": "opret", "do": "click", "role": "button", "name": "Create", "exact": true },
+    {
+      "id": "vent-paa-tilfoejet",
+      "do": "waitForText",
+      "text": "Domain added",
+      "timeoutMs": 15000,
+      "comment": "En snackbar. Siden bliver stående på add_domain bagefter, og feltet viser 'Domain is invalid' — det er formularen der nulstilles, ikke en fejl."
+    },
+    { "id": "til-listen", "do": "goto", "url": "https://postmaster.google.com/v2/u/0/manage_domains" },
+    {
+      "id": "aabn-raekker-pr-side",
+      "do": "click",
+      "role": "combobox",
+      "name": "Rows per page",
+      "comment": "Listen viser 10 rækker og husker ikke valget. Med flere end 10 domæner ligger det nye måske på side 2."
+    },
+    { "id": "vaelg-150", "do": "click", "role": "option", "name": "150", "exact": true },
+    {
+      "id": "aabn-raekkemenu",
+      "do": "click",
+      "selector": "tr:has(td:text-is(\"{{domain}}\")) button[aria-label=\"More actions\"]",
+      "timeoutMs": 20000
+    },
+    { "id": "verify-domain", "do": "click", "role": "menuitem", "name": "Verify domain", "exact": true },
+    {
+      "id": "laes-poster",
+      "do": "collect",
+      "selector": "[role=dialog] input",
+      "attr": "value",
+      "as": "verifikation",
+      "stamp": { "domain": "{{domain}}" },
+      "comment": "Tre felter i rækkefølgen TXT, CNAME-navn, CNAME-mål. Værdien står som value-attribut, så collect kan læse den. TXT-værdien er 'google-site-verification=…' og lægges på selve domænet (@)."
+    },
+    { "id": "luk", "do": "click", "role": "button", "name": "Not now", "exact": true, "optional": true }
+  ]
+}

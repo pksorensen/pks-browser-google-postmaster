@@ -1,0 +1,40 @@
+{
+  "name": "google-postmaster-bekraeft",
+  "description": "Trykker Verify på et domæne i Google Postmaster Tools, når TXT-posten fra google-postmaster-tilfoej ligger i DNS. Fejler hvis Google ikke kan se posten endnu.",
+  "profile": "google",
+  "params": {
+    "domain": { "required": true, "description": "Domænet der skal verificeres, fx famai.dk." }
+  },
+  "steps": [
+    {
+      "id": "log-ind",
+      "do": "human",
+      "url": "https://postmaster.google.com/v2/u/0/manage_domains",
+      "prompt": "Log ind på din Google-konto i vinduet, hvis den spørger. Opskriften fortsætter selv, når domænelisten vises.",
+      "until": { "url": "https://postmaster.google.com/v2/u/0/manage_domains" },
+      "timeoutMs": 600000
+    },
+    { "id": "aabn-raekker-pr-side", "do": "click", "role": "combobox", "name": "Rows per page" },
+    { "id": "vaelg-150", "do": "click", "role": "option", "name": "150", "exact": true },
+    {
+      "id": "aabn-raekkemenu",
+      "do": "click",
+      "selector": "tr:has(td:text-is(\"{{domain}}\")) button[aria-label=\"More actions\"]",
+      "timeoutMs": 20000
+    },
+    { "id": "verify-domain", "do": "click", "role": "menuitem", "name": "Verify domain", "exact": true },
+    {
+      "id": "verify",
+      "do": "click",
+      "selector": "[role=dialog] button:text-is(\"Verify\")",
+      "comment": "Dialogen har to knapper, Not now og Verify. Navnet alene ville også ramme 'Verify domain' i menuen bagved."
+    },
+    {
+      "id": "kraev-verified",
+      "do": "assert",
+      "selector": "tr:has(td:text-is(\"{{domain}}\")) td:text-is(\"Verified\")",
+      "timeoutMs": 20000,
+      "comment": "text-is, ikke has-text: 'Unverified' indeholder 'Verified'. Målt 15/11 på famai.dk: dialogen lukker og rækken skifter til Verified inden for få sekunder, når TXT-posten er offentlig."
+    }
+  ]
+}
