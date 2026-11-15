@@ -7,9 +7,14 @@
   },
   "steps": [
     {
+      "id": "aabn-listen",
+      "do": "goto",
+      "url": "https://postmaster.google.com/v2/u/0/manage_domains",
+      "comment": "Et human-trin navigerer kun selv, når det også har capture. Uden dette goto stod vinduet på about:blank."
+    },
+    {
       "id": "log-ind",
       "do": "human",
-      "url": "https://postmaster.google.com/v2/u/0/manage_domains",
       "prompt": "Log ind på din Google-konto i vinduet, hvis den spørger. Opskriften fortsætter selv, når domænelisten vises.",
       "until": { "url": "https://postmaster.google.com/v2/u/0/manage_domains" },
       "timeoutMs": 600000
