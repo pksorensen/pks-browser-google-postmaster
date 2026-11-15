@@ -3,7 +3,7 @@
   "description": "Tilføjer et domæne i Google Postmaster Tools og læser dets verifikationsposter (TXT og CNAME) ud. DNS-posten lægges bagefter af kalderen (Cloudflare), og google-postmaster-bekraeft trykker Verify. Se docs/google-postmaster.md.",
   "profile": "google",
   "params": {
-    "domain": { "required": true, "description": "Domænet der skal tilføjes, fx famai.dk. Kun domænet, ingen https:// og ingen sti." }
+    "domain": { "required": true, "description": "Domænet der skal tilføjes, fx famai.dk. Kun selve domænenavnet, uden protokol og sti." }
   },
   "result": ["verifikation"],
   "steps": [
